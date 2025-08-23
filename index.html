@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#e9eef5" />
+  <meta name="description" content="GymTrack – offline-first PWA for logging workouts, templates, and progress charts." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>GymTrack • PWA</title>
+</head>
+<body>
+  <!-- App Shell -->
+  <header class="app-header" role="banner">
+    <div class="app-title">🏋️ GymTrack</div>
+    <button id="btnQuickAdd" class="icon-btn" aria-label="Quick add set" title="Quick add set">
+      <span aria-hidden>＋</span>
+    </button>
+  </header>
+
+  <main id="app" class="app-main" role="main">
+    <!-- LOG TAB -->
+    <section id="view-log" class="view view-active" role="region" aria-label="Log">
+      <div class="card">
+        <div class="card-header">Start Workout</div>
+        <div class="card-body grid-compact">
+          <label class="row">
+            <span>From Template</span>
+            <select id="startFromTemplate" aria-label="Select template to start">
+              <option value="">— None (blank) —</option>
+            </select>
+          </label>
+          <div class="row">
+            <button id="btnStartSession" class="btn primary">Start Session</button>
+            <button id="btnEndSession" class="btn danger" disabled>End</button>
+          </div>
+          <label class="row">
+            <span>Rest Timer</span>
+            <div class="switch">
+              <input type="checkbox" id="toggleTimer" aria-label="Toggle rest timer" />
+              <span class="slider" aria-hidden="true"></span>
+            </div>
+            <input id="timerSeconds" type="number" min="10" max="600" step="5" value="90" aria-label="Timer seconds" />
+            <button id="btnTimer" class="btn" disabled>Start 90s</button>
+          </label>
+        </div>
+      </div>
+
+      <div id="currentSession" class="card hidden" aria-live="polite">
+        <div class="card-header flex-between">
+          <span>Current Session</span>
+          <time id="sessionStartTime"></time>
+        </div>
+        <div id="sessionExerciseList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- PROGRAMS TAB -->
+    <section id="view-programs" class="view" role="region" aria-label="Programs">
+      <div class="card">
+        <div class="card-header flex-between">
+          <span>Session Templates</span>
+          <button id="btnNewTemplate" class="btn primary">New</button>
+        </div>
+        <div class="card-body">
+          <input id="templateSearch" class="input" type="search" placeholder="Search templates…" aria-label="Search templates" />
+          <div id="templateList" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIBRARY TAB -->
+    <section id="view-library" class="view" role="region" aria-label="Library">
+      <div class="card">
+        <div class="card-header flex-between">
+          <span>Exercise Library</span>
+          <button id="btnNewExercise" class="btn primary">Add</button>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <input id="exerciseSearch" class="input" type="search" placeholder="Search by name or group…" aria-label="Search exercises" />
+            <select id="exerciseFilter" aria-label="Filter by muscle group">
+              <option value="">All groups</option>
+            </select>
+          </div>
+          <div id="exerciseList" class="list"></div>
+          <div id="exerciseEmpty" class="empty">No exercises yet. Tap <strong>Add</strong> to create your first one.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRESS TAB -->
+    <section id="view-progress" class="view" role="region" aria-label="Progress">
+      <div class="card">
+        <div class="card-header">Progress & Analytics</div>
+        <div class="card-body">
+          <div class="grid-compact">
+            <label class="row">
+              <span>Exercise</span>
+              <select id="progressExercise"></select>
+            </label>
+            <label class="row">
+              <span>Metric</span>
+              <select id="progressMetric">
+                <option value="best">Best Weight</option>
+                <option value="volume">Session Volume</option>
+                <option value="est1rm">Estimated 1RM</option>
+              </select>
+            </label>
+            <label class="row">
+              <span>Date Range</span>
+              <input id="dateFrom" type="date" />
+              <span>→</span>
+              <input id="dateTo" type="date" />
+              <button id="btnApplyRange" class="btn">Apply</button>
+            </label>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="progressChart" height="280" aria-label="Progress chart"></canvas>
+          </div>
+          <div id="chartHint" class="hint">Tap a point to see set details.</div>
+          <div id="chartPointDetails" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="view-settings" class="view" role="region" aria-label="Settings">
+      <div class="card">
+        <div class="card-header">Settings</div>
+        <div class="card-body grid-compact">
+          <label class="row">
+            <span>Units</span>
+            <select id="settingUnits" aria-label="Units">
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+            </select>
+          </label>
+          <label class="row">
+            <span>Default Rest Timer</span>
+            <input id="settingTimer" type="number" min="10" max="600" step="5" />
+            <span>seconds</span>
+          </label>
+          <label class="row">
+            <span>Intensity Input</span>
+            <select id="settingIntensity">
+              <option value="rpe">RPE (1–10)</option>
+              <option value="felt">Felt (easy/medium/hard)</option>
+            </select>
+          </label>
+          <hr />
+          <div class="row">
+            <button id="btnExportJSON" class="btn">Export JSON</button>
+            <button id="btnImportJSON" class="btn">Import JSON</button>
+            <input id="inputImportJSON" type="file" accept="application/json" class="hidden" />
+          </div>
+          <div class="row">
+            <button id="btnExportCSVAll" class="btn">Export CSV: All</button>
+            <button id="btnExportCSVExercise" class="btn">Export CSV: Exercise</button>
+            <button id="btnExportCSVRange" class="btn">Export CSV: Date Range</button>
+          </div>
+          <div class="muted" id="schemaVersion">Schema v<span id="schemaVersionNum">1</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">About</div>
+        <div class="card-body">
+          <p>GymTrack is an offline-first, single-user PWA. Data is stored on this device only. You can back up to JSON at any time.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Tab Bar -->
+  <nav class="tabbar" role="tablist" aria-label="Primary">
+    <button class="tab tab-active" role="tab" aria-selected="true" data-tab="log">
+      <span class="tab-ico" aria-hidden>⏱️</span>
+      <span class="tab-txt">Log</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="programs">
+      <span class="tab-ico" aria-hidden>🧩</span>
+      <span class="tab-txt">Programs</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="library">
+      <span class="tab-ico" aria-hidden>📚</span>
+      <span class="tab-txt">Library</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="progress">
+      <span class="tab-ico" aria-hidden>📈</span>
+      <span class="tab-txt">Progress</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="settings">
+      <span class="tab-ico" aria-hidden>⚙️</span>
+      <span class="tab-txt">Settings</span>
+    </button>
+  </nav>
+
+  <!-- Toasts / Notifications -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Dialogs -->
+  <dialog id="dlgExercise" class="modal">
+    <form method="dialog" id="exerciseForm" class="form">
+      <h3 id="exerciseFormTitle">Exercise</h3>
+      <input type="hidden" id="exerciseId" />
+      <label>
+        <span>Name</span>
+        <input id="exerciseName" required maxlength="100" />
+      </label>
+      <label>
+        <span>Muscle Group</span>
+        <input id="exerciseGroup" maxlength="60" placeholder="e.g., Chest, Back, Legs" />
+      </label>
+      <label>
+        <span>Notes</span>
+        <textarea id="exerciseNotes" rows="3"></textarea>
+      </label>
+      <menu>
+        <button value="cancel" class="btn">Cancel</button>
+        <button id="btnSaveExercise" value="default" class="btn primary">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlgTemplate" class="modal">
+    <form method="dialog" id="templateForm" class="form">
+      <h3 id="templateFormTitle">Session Template</h3>
+      <input type="hidden" id="templateId" />
+      <label>
+        <span>Name</span>
+        <input id="templateName" required maxlength="100" />
+      </label>
+      <label>
+        <span>Notes</span>
+        <textarea id="templateNotes" rows="2"></textarea>
+      </label>
+      <div class="subheader">Exercises</div>
+      <div id="templateItems" class="list sortable" aria-live="polite"></div>
+      <div class="row">
+        <select id="templateAddExercise"></select>
+        <input id="templateTargetSets" type="number" min="1" max="10" step="1" value="3" aria-label="Target sets" />
+        <input id="templateTargetReps" type="number" min="1" max="50" step="1" value="8" aria-label="Target reps" />
+        <button id="btnTemplateAdd" class="btn">Add</button>
+      </div>
+      <menu>
+        <button value="cancel" class="btn">Cancel</button>
+        <button id="btnSaveTemplate" value="default" class="btn primary">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlgConfirm" class="modal">
+    <form method="dialog" id="confirmForm" class="form">
+      <h3 id="confirmTitle">Confirm</h3>
+      <p id="confirmMessage">Are you sure?</p>
+      <menu>
+        <button value="cancel" class="btn">Cancel</button>
+        <button id="btnConfirm" value="default" class="btn danger">Delete</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- TEMPLATES (for cloning in JS) -->
+  <template id="tpl-exercise-item">
+    <div class="list-item">
+      <div class="title"></div>
+      <div class="subtitle"></div>
+      <div class="actions">
+        <button class="icon-btn edit" aria-label="Edit">✏️</button>
+        <button class="icon-btn delete" aria-label="Delete">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-template-item">
+    <div class="list-item">
+      <div class="title"></div>
+      <div class="subtitle"></div>
+      <div class="actions">
+        <button class="icon-btn edit" aria-label="Edit">✏️</button>
+        <button class="icon-btn duplicate" aria-label="Duplicate">📄</button>
+        <button class="icon-btn delete" aria-label="Delete">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-template-exercise-row">
+    <div class="list-item drag">
+      <span class="drag-handle" aria-hidden>⠿</span>
+      <div class="title"></div>
+      <div class="subtitle"></div>
+      <div class="actions">
+        <button class="icon-btn up" aria-label="Move up">⬆️</button>
+        <button class="icon-btn down" aria-label="Move down">⬇️</button>
+        <button class="icon-btn remove" aria-label="Remove">✖</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-session-exercise">
+    <div class="exercise card flat">
+      <div class="exercise-header flex-between">
+        <div class="title"></div>
+        <div class="last-used muted"></div>
+      </div>
+      <div class="set-entry row">
+        <input class="input weight" inputmode="decimal" pattern="[0-9]*" placeholder="Weight" aria-label="Weight" />
+        <div class="stepper">
+          <button class="btn step minus" aria-label="Weight -">–</button>
+          <button class="btn step plus" aria-label="Weight +">+</button>
+        </div>
+        <input class="input reps" inputmode="numeric" pattern="[0-9]*" placeholder="Reps" aria-label="Reps" />
+        <div class="stepper">
+          <button class="btn step minus" aria-label="Reps -">–</button>
+          <button class="btn step plus" aria-label="Reps +">+</button>
+        </div>
+        <select class="input intensity" aria-label="Intensity (RPE or Felt)"></select>
+        <button class="btn add-set primary">Add Set</button>
+      </div>
+      <div class="sets list compact"></div>
+    </div>
+  </template>
+
+  <template id="tpl-set-row">
+    <div class="list-item">
+      <div class="title"></div>
+      <div class="subtitle"></div>
+      <div class="actions">
+        <button class="icon-btn delete" aria-label="Delete set">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Scripts -->
+  <script src="lib/chart.umd.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

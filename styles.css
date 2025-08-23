@@ -1,0 +1,154 @@
+/*
+  GymTrack • styles.css
+  Mobile-first, touch-friendly, accessible, neumorphic design
+*/
+:root{
+    --bg:#e9eef5;
+    --card:#f6f9ff;
+    --text:#2b3541;
+    --muted:#6b7480;
+    --primary:#4c7df0;
+    --danger:#e05050;
+    --ok:#2aa97b;
+    --shadow: 8px 8px 16px rgba(0,0,0,0.12), -8px -8px 16px rgba(255,255,255,0.8);
+    --inset-shadow: inset 6px 6px 10px rgba(0,0,0,0.08), inset -6px -6px 10px rgba(255,255,255,0.8);
+    --radius:20px;
+    --radius-sm:14px;
+    --tap: 48px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f141b;
+      --card:#151b24;
+      --text:#e6edf7;
+      --muted:#98a4b3;
+      --primary:#7aa2ff;
+      --danger:#ff7a7a;
+      --ok:#57d6a1;
+      --shadow: 8px 8px 16px rgba(0,0,0,0.6), -8px -8px 16px rgba(255,255,255,0.03);
+      --inset-shadow: inset 6px 6px 10px rgba(0,0,0,0.6), inset -6px -6px 10px rgba(255,255,255,0.04);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  html{font-size:16px}
+  body{
+    margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .hidden{display:none!important}
+  .muted{color:var(--muted)}
+  .hint{font-size:.9rem; color:var(--muted); margin-top:.25rem}
+  .flex-between{display:flex; align-items:center; justify-content:space-between}
+  .grid-compact{display:grid; grid-template-columns:1fr; gap:.75rem}
+  .row{display:flex; gap:.5rem; align-items:center; flex-wrap:wrap}
+  
+  /* Header */
+  .app-header{
+    position:sticky; top:0; z-index:20; backdrop-filter:saturate(120%) blur(6px);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.75rem 1rem; background:linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,0));
+  }
+  @media (prefers-color-scheme: dark){
+    .app-header{background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0));}
+  }
+  .app-title{font-weight:700; letter-spacing:.2px}
+  .icon-btn{min-width:var(--tap); min-height:var(--tap); border:none; background:var(--card); border-radius:50%; box-shadow:var(--shadow); display:grid; place-items:center; font-size:1.25rem}
+  .icon-btn:active{box-shadow:var(--inset-shadow)}
+  
+  /* Layout */
+  .app-main{padding: .5rem 1rem 6rem; max-width:860px; margin:0 auto}
+  .view{display:none}
+  .view-active{display:block}
+  
+  /* Cards */
+  .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:.25rem .75rem .75rem; margin:1rem 0}
+  .card.flat{padding:.5rem; border-radius:var(--radius-sm)}
+  .card-header{font-weight:700; padding:.5rem 0 .25rem; display:flex; align-items:center; gap:.75rem}
+  .card-body{padding:.25rem 0}
+  .subheader{margin-top:.5rem; font-weight:600; color:var(--muted)}
+  .empty{padding:.75rem; color:var(--muted); text-align:center}
+  
+  /* Inputs */
+  .input, input, select, textarea{width:100%; font:inherit; color:inherit; background:var(--card); border:none; border-radius:14px; padding:.8rem .9rem; box-shadow:var(--inset-shadow); outline:none}
+  .input:focus, select:focus, textarea:focus{box-shadow:0 0 0 3px rgba(76,125,240,.25), var(--inset-shadow)}
+  label{display:grid; gap:.4rem}
+  
+  /* Buttons */
+  .btn{appearance:none; border:none; border-radius:16px; background:var(--card); padding:.8rem 1rem; box-shadow:var(--shadow); color:inherit; font-weight:600; min-height:var(--tap)}
+  .btn:active{box-shadow:var(--inset-shadow)}
+  .btn.primary{background:linear-gradient(180deg, var(--primary), color-mix(in oklab, var(--primary), #000 12%)); color:white}
+  .btn.danger{background:linear-gradient(180deg, var(--danger), color-mix(in oklab, var(--danger), #000 12%)); color:white}
+  .btn[disabled]{opacity:.5}
+  .stepper{display:grid; grid-auto-flow:column; gap:.35rem}
+  .stepper .step{min-width:44px}
+  
+  /* Switch */
+  .switch{position:relative; width:64px; height:36px; background:var(--card); border-radius:18px; box-shadow:var(--inset-shadow)}
+  .switch input{appearance:none; position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0}
+  .switch .slider{position:absolute; top:4px; left:4px; width:28px; height:28px; border-radius:50%; background:linear-gradient(180deg,#fff, #ddd); box-shadow:var(--shadow); transition:transform .2s ease}
+  .switch input:checked + .slider{transform:translateX(28px)}
+  
+  /* Lists */
+  .list{display:grid; gap:.5rem}
+  .list.compact .list-item{padding:.5rem .6rem}
+  .list-item{background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:.7rem .9rem; display:grid; grid-template-columns:1fr auto; gap:.35rem; align-items:center}
+  .list-item .title{font-weight:600}
+  .list-item .subtitle{font-size:.9rem; color:var(--muted)}
+  .list-item .actions{display:flex; gap:.25rem}
+  .list-item.drag{touch-action:none}
+  .drag-handle{cursor:grab; margin-right:.4rem}
+  
+  /* Exercise block */
+  .exercise{margin:.75rem 0}
+  .exercise-header{margin-bottom:.4rem}
+  .set-entry input, .set-entry select{flex:1}
+  .set-entry .add-set{flex:0 0 auto}
+  
+  /* Tabbar */
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(5,1fr); gap:.5rem; padding:.6rem .8rem; background:var(--bg); backdrop-filter:saturate(120%) blur(6px)}
+  .tab{display:grid; place-items:center; gap:.15rem; padding:.5rem .25rem; border-radius:16px; background:var(--card); box-shadow:var(--shadow); border:none; color:inherit; min-height:56px}
+  .tab:active{box-shadow:var(--inset-shadow)}
+  .tab-ico{font-size:1.2rem}
+  .tab-txt{font-size:.8rem}
+  .tab-active{outline:2px solid color-mix(in oklab, var(--primary), #000 10%)}
+  
+  /* Dialogs */
+  .modal{border:none; border-radius:24px; padding:0; background:var(--card); box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal::backdrop{background:rgba(0,0,0,.35)}
+  .form{padding:1rem}
+  .form h3{margin:.25rem 0 1rem}
+  .form label > span{font-size:.9rem; color:var(--muted)}
+  .form menu{display:flex; gap:.5rem; justify-content:flex-end; margin:1rem 0 0; padding:0}
+  
+  /* Toast */
+  #toast{position:fixed; left:0; right:0; bottom:72px; display:grid; place-items:center; pointer-events:none; z-index:40}
+  #toast .msg{pointer-events:auto; padding:.8rem 1rem; background:var(--card); color:inherit; border-radius:14px; box-shadow:var(--shadow)}
+  
+  /* Chart */
+  .chart-wrap{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:.5rem}
+  
+  /* Accessibility focus */
+  :focus-visible{outline:3px solid color-mix(in oklab, var(--primary), #000 10%); outline-offset:2px; border-radius:18px}
+  
+  /* Utility */
+  .flex{display:flex}
+  .gap-s{gap:.25rem}
+  .gap-m{gap:.5rem}
+  .gap-l{gap:1rem}
+  
+  /* iOS safe areas */
+  @supports(padding: max(0px)){
+    .app-main{padding-bottom: max(6rem, env(safe-area-inset-bottom));}
+    .tabbar{padding-bottom: max(.6rem, env(safe-area-inset-bottom));}
+  }
+  
+  /* Larger screens enhancements */
+  @media(min-width:560px){
+    .grid-compact{grid-template-columns:repeat(2,1fr)}
+    .set-entry{display:grid; grid-template-columns: 1fr auto 1fr auto 1fr auto; gap:.5rem}
+  }
+  @media(min-width:840px){
+    .app-main{padding: 1rem 1rem 7rem}
+  }
+  
