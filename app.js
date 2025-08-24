@@ -6,19 +6,36 @@
 import { DB_VERSION } from './db.js';
 import { initUI } from './ui.js';
 
-// Kickoff once DOM is ready
+// --- tiny safe toast used during early init / errors ---
+function safeToast(msg, ms = 4000) {
+  try {
+    const host = document.getElementById('toast');
+    if (!host) return;
+    const d = document.createElement('div');
+    d.className = 'msg';
+    d.textContent = String(msg);
+    host.appendChild(d);
+    setTimeout(() => d.remove(), ms);
+  } catch {}
+}
+
+
 window.addEventListener('DOMContentLoaded', async () => {
-  // Show schema version
+  // Show schema version if present
   const el = document.getElementById('schemaVersionNum');
-  if(el) el.textContent = String(DB_VERSION);
+  if (el) el.textContent = '1'; // or String(DB_VERSION) if you import it here
 
-  // Initialize UI (loads defaults, binds events, renders lists)
-  try{ await initUI(); }
-  catch(err){ console.error(err); toastOnce('Failed to initialize app'); }
+  try {
+    await initUI();                // <-- your main app boot
+  } catch (err) {
+    console.error('initUI failed:', err);
+    // Show the real error to help you diagnose (you can shorten later)
+    safeToast('Failed to initialize app: ' + (err && err.message ? err.message : 'see console'));
+  }
 
-  // Register Service Worker for PWA
-  registerSW();
+  registerSW();                    // PWA registration after UI attempt
 });
+
 
 // Simple one-time toast util in case UI isn't fully booted
 let _toasted = false;
@@ -69,3 +86,18 @@ window.addEventListener('beforeinstallprompt', (e)=>{
 window.addEventListener('online', ()=> notify('You are online'));
 window.addEventListener('offline', ()=> notify('Offline – data saves locally'));
 function notify(msg){ const host=document.getElementById('toast'); if(!host) return; const d=document.createElement('div'); d.className='msg'; d.textContent=msg; host.appendChild(d); setTimeout(()=>d.remove(), 1500); }
+
+// Surface unexpected runtime errors during navigation/updates
+window.addEventListener('error', (e) => {
+  // Ignore noisy ResizeObserver errors
+  if (String(e?.message || '').includes('ResizeObserver')) return;
+  console.error('window error:', e.error || e.message || e);
+  safeToast('Error: ' + (e?.message || 'see console'));
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = (e && e.reason && e.reason.message) ? e.reason.message : (e?.reason || 'see console');
+  console.error('unhandledrejection:', e);
+  safeToast('Error: ' + msg);
+});
+  

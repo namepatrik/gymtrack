@@ -3,6 +3,8 @@
   DOM rendering, navigation, dialogs, timers, logging, and progress wiring.
   This module imports the data layer (db.js) and charts (charts.js), plus export helpers.
 */
+console.info('[GymTrack] ui.js build: plan-first v2');
+
 
 import {
     listExercises, listMuscleGroups, upsertExercise, deleteExercise,
@@ -295,6 +297,7 @@ form.onsubmit = async (ev)=>{
   
   async function refreshStartFromTemplates(){
     const sel = $('#startFromTemplate');
+    if (!sel) return; // Prevent error if element is missing
     const items = await listTemplates('');
     const cur = sel.value;
     sel.innerHTML = '<option value="">— None (blank) —</option>' + items.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
@@ -304,8 +307,21 @@ form.onsubmit = async (ev)=>{
   // ===== Log (Sessions & Sets) =====
   function bindLogView(){
     // New plan shortcut
+    $('#btnFinishSession').addEventListener('click', endCurrentSession);
+    $('#btnDiscardSession').addEventListener('click', discardCurrentSession);
     $('#btnLogNewPlan').addEventListener('click', ()=> openTemplateDialog());
-  
+    // Hide the workout plan dropdown by default
+    const planDropdown = $('#startFromTemplate');
+    if (planDropdown) planDropdown.style.display = 'none';
+    // Show it only on the correct view
+    // REMOVE or REPLACE this block:
+    // if (viewId === 'view-plan-create') {
+    //     if (planDropdown) planDropdown.style.display = '';
+    // }
+    // NEW session controls
+    // REMOVE these lines:
+    // on($('#btnFinishSession'), 'click', endCurrentSession);
+    // on($('#btnDiscardSession'), 'click', discardCurrentSession);
     // Back buttons
     $('#btnBackToPlans').addEventListener('click', ()=>{
       hide($('#logPlanDetail'));
@@ -320,6 +336,35 @@ form.onsubmit = async (ev)=>{
   
     // Initial render of plans list when app starts
     renderLogPlans();
+
+    async function endCurrentSession(){
+      if(!state.currentSessionId){ toast('No session'); return; }
+      const ok = await confirmDialog('Finish Session', 'Save and close this workout?', 'Finish');
+      if(!ok) return;
+      try{
+        await updateSession(state.currentSessionId, { updatedAt: new Date().toISOString() });
+      }catch(e){ /* sets are already saved */ }
+      state.currentSessionId = null;
+      state.currentPlanId = null;
+      hide($('#logPlanDetail'));
+      hide($('#logExerciseInput'));
+      show($('#view-log .card'));
+      toast('Session finished');
+    }
+    
+    async function discardCurrentSession(){
+      if(!state.currentSessionId){ toast('No session'); return; }
+      const ok = await confirmDialog('Discard Session', 'Delete this session and all its sets?', 'Discard');
+      if(!ok) return;
+      await deleteSession(state.currentSessionId);
+      state.currentSessionId = null;
+      state.currentPlanId = null;
+      hide($('#logPlanDetail'));
+      hide($('#logExerciseInput'));
+      show($('#view-log .card'));
+      toast('Session discarded');
+    }
+     
   }
   async function renderLogPlans(){
     const plans = await listTemplates('');
@@ -426,6 +471,33 @@ form.onsubmit = async (ev)=>{
     // nav
     hide($('#logPlanDetail'));
     show($('#logExerciseInput'));
+  }
+  async function endCurrentSession(){
+    if(!state.currentSessionId){ toast('No session'); return; }
+    const ok = await confirmDialog('Finish Session', 'Save and close this workout?', 'Finish');
+    if(!ok) return;
+    try{
+      await updateSession(state.currentSessionId, { updatedAt: new Date().toISOString() });
+    }catch(e){ /* best effort; sets are already saved */ }
+    state.currentSessionId = null;
+    state.currentPlanId = null;
+    hide($('#logPlanDetail'));
+    hide($('#logExerciseInput'));
+    show($('#view-log .card'));
+    toast('Session finished');
+  }
+  
+  async function discardCurrentSession(){
+    if(!state.currentSessionId){ toast('No session'); return; }
+    const ok = await confirmDialog('Discard Session', 'Delete this session and all its sets?', 'Discard');
+    if(!ok) return;
+    await deleteSession(state.currentSessionId);
+    state.currentSessionId = null;
+    state.currentPlanId = null;
+    hide($('#logPlanDetail'));
+    hide($('#logExerciseInput'));
+    show($('#view-log .card'));
+    toast('Session discarded');
   }
    
   
@@ -610,12 +682,22 @@ form.onsubmit = async (ev)=>{
   }
   
   function applySettingsToUI(){
-    $('#settingUnits').value = state.settings.units||'kg';
-    $('#settingTimer').value = state.settings.restSeconds||90;
-    $('#settingIntensity').value = state.settings.intensityMode||'rpe';
-    $('#timerSeconds').value = state.settings.restSeconds||90;
-    $('#btnTimer').textContent = `Start ${$('#timerSeconds').value}s`;
+    const unitsEl = $('#settingUnits');
+    const timerEl = $('#settingTimer');
+    const intensityEl = $('#settingIntensity');
+  
+    if (unitsEl) unitsEl.value = state.settings.units || 'kg';
+    if (timerEl)  timerEl.value  = state.settings.restSeconds || 90;
+    if (intensityEl) intensityEl.value = state.settings.intensityMode || 'rpe';
+  
+    // Legacy inline rest-timer controls (not present in your HTML):
+    const restSecondsInline = $('#timerSeconds');
+    const btnTimer = $('#btnTimer');
+    if (restSecondsInline) restSecondsInline.value = state.settings.restSeconds || 90;
+    if (btnTimer && restSecondsInline) btnTimer.textContent = `Start ${restSecondsInline.value}s`;
   }
+  
+  
   
   // ===== Global refresh helpers =====
   async function refreshAllLists(){

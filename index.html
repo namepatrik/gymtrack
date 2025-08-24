@@ -35,7 +35,11 @@
         <div class="card-header flex-between">
           <button id="btnBackToPlans" class="btn">← Back</button>
           <div class="muted" id="logPlanName"></div>
-        </div>
+          <div class="actions">
+            <button id="btnFinishSession" class="btn primary">Finish</button>
+            <button id="btnDiscardSession" class="btn danger">Discard</button>
+          </div>
+        </div>        
         <div class="card-body">
           <div id="planExerciseList" class="list"></div>
         </div>
@@ -313,3 +317,4 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+<select id="startFromTemplate"></select>
