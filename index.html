@@ -16,33 +16,57 @@
 
   <main class="app-main">
     <!-- Log View -->
-    <section id="view-log" class="view view-active">
+    <section id="view-log" class="view view-active" role="region" aria-label="Log">
       <div class="card">
         <div class="card-header flex-between">
-          <span>Session</span>
-          <button id="btnStartSession" class="btn primary">Start</button>
-          <button id="btnEndSession" class="btn danger" disabled>End</button>
+          <span>Choose Workout Plan</span>
+          <button id="btnLogNewPlan" class="btn primary">New Plan</button>
         </div>
         <div class="card-body">
-          <label>
-            <span>Start from template</span>
-            <select id="startFromTemplate"></select>
-          </label>
-          <div id="currentSession" class="hidden">
-            <p class="muted">Started at <span id="sessionStartTime"></span></p>
-            <div id="sessionExerciseList"></div>
+          <div id="logPlans" class="list"></div>
+          <div id="logPlansEmpty" class="empty">
+            No plans yet. Tap <strong>New Plan</strong> to create one.
           </div>
         </div>
       </div>
-      <div class="card flat row gap-m">
-        <label class="switch">
-          <input type="checkbox" id="toggleTimer">
-          <span class="slider"></span>
-        </label>
-        <input type="number" id="timerSeconds" min="10" step="5" value="90" style="width:80px">
-        <button id="btnTimer" class="btn">Start 90s</button>
+    
+      <!-- Plan Detail: shows exercises in the selected plan -->
+      <div id="logPlanDetail" class="card hidden" aria-live="polite">
+        <div class="card-header flex-between">
+          <button id="btnBackToPlans" class="btn">← Back</button>
+          <div class="muted" id="logPlanName"></div>
+        </div>
+        <div class="card-body">
+          <div id="planExerciseList" class="list"></div>
+        </div>
+      </div>
+    
+      <!-- Exercise Input: single exercise logger -->
+      <div id="logExerciseInput" class="card hidden">
+        <div class="card-header flex-between">
+          <button id="btnBackToPlan" class="btn">← Back</button>
+          <div class="title" id="logExerciseTitle"></div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <input id="logWeight" class="input" inputmode="decimal" placeholder="Weight">
+            <div class="stepper">
+              <button id="logWeightMinus" class="btn step">–</button>
+              <button id="logWeightPlus" class="btn step">+</button>
+            </div>
+            <input id="logReps" class="input" inputmode="numeric" placeholder="Reps">
+            <div class="stepper">
+              <button id="logRepsMinus" class="btn step">–</button>
+              <button id="logRepsPlus" class="btn step">+</button>
+            </div>
+            <select id="logIntensity" class="input"></select>
+            <button id="btnLogAddSet" class="btn primary">Add Set</button>
+          </div>
+          <div id="logExerciseSets" class="list compact" style="margin-top:.5rem"></div>
+        </div>
       </div>
     </section>
+    
 
     <!-- Programs View -->
     <section id="view-programs" class="view">

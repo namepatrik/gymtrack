@@ -21,6 +21,10 @@ import {
   const $ = (sel, root=document)=> root.querySelector(sel);
   const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
   
+  function show(el){ el.classList.remove('hidden'); }
+  function hide(el){ el.classList.add('hidden'); }
+  
+
   function toast(msg, ms=1800){
     const host = $('#toast');
     const el = document.createElement('div');
@@ -299,12 +303,131 @@ form.onsubmit = async (ev)=>{
   
   // ===== Log (Sessions & Sets) =====
   function bindLogView(){
-    $('#btnStartSession').addEventListener('click', onStartSession);
-    $('#btnEndSession').addEventListener('click', onEndSession);
-    $('#toggleTimer').addEventListener('change', onTimerToggle);
-    $('#timerSeconds').addEventListener('change', onTimerSecondsChange);
-    $('#btnTimer').addEventListener('click', ()=> startTimer(Number($('#timerSeconds').value)||90));
+    // New plan shortcut
+    $('#btnLogNewPlan').addEventListener('click', ()=> openTemplateDialog());
+  
+    // Back buttons
+    $('#btnBackToPlans').addEventListener('click', ()=>{
+      hide($('#logPlanDetail'));
+      hide($('#logExerciseInput'));
+      show($('#view-log .card')); // plans card
+    });
+  
+    $('#btnBackToPlan').addEventListener('click', ()=>{
+      hide($('#logExerciseInput'));
+      show($('#logPlanDetail'));
+    });
+  
+    // Initial render of plans list when app starts
+    renderLogPlans();
   }
+  async function renderLogPlans(){
+    const plans = await listTemplates('');
+    const wrap = $('#logPlans');
+    const empty = $('#logPlansEmpty');
+    wrap.innerHTML = '';
+    empty.classList.toggle('hidden', plans.length > 0);
+  
+    plans.forEach(p=>{
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      const t = document.createElement('div'); t.className='title'; t.textContent = p.name;
+      const s = document.createElement('div'); s.className='subtitle'; s.textContent = `${(p.items?.length||0)} exercises`;
+      const actions = document.createElement('div'); actions.className='actions';
+      const btn = document.createElement('button'); btn.className='btn'; btn.textContent='Open';
+      btn.addEventListener('click', ()=> openPlanDetail(p.id));
+      actions.appendChild(btn);
+      row.appendChild((()=>{ const d=document.createElement('div'); d.appendChild(t); d.appendChild(s); return d; })());
+      row.appendChild(actions);
+      wrap.appendChild(row);
+    });
+  }
+
+  async function openPlanDetail(templateId){
+    const tpl = await getTemplate(templateId);
+    if(!tpl){ toast('Plan missing'); return; }
+  
+    // Start a new session for this plan
+    const s = await createSession({ templateId });
+    state.currentSessionId = s.id;
+  
+    $('#logPlanName').textContent = tpl.name;
+    const list = $('#planExerciseList');
+    list.innerHTML = '';
+  
+    const exs = await listExercises();
+    const nameById = new Map(exs.map(e=> [e.id, e.name]));
+  
+    (tpl.items||[]).forEach(it=>{
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      const title = document.createElement('div'); title.className='title'; title.textContent = nameById.get(it.exerciseId) || '(deleted)';
+      const sub = document.createElement('div'); sub.className='subtitle'; sub.textContent = `${it.targetSets} × ${it.targetReps}`;
+      const actions = document.createElement('div'); actions.className='actions';
+      const btn = document.createElement('button'); btn.className='btn'; btn.textContent='Log';
+      btn.addEventListener('click', ()=> openExerciseInput(it.exerciseId, nameById.get(it.exerciseId) || 'Exercise'));
+      actions.appendChild(btn);
+  
+      const left = document.createElement('div'); left.appendChild(title); left.appendChild(sub);
+      row.appendChild(left); row.appendChild(actions);
+      list.appendChild(row);
+    });
+  
+    // Show plan view
+    hide($('#view-log .card')); // hide plans card
+    hide($('#logExerciseInput'));
+    show($('#logPlanDetail'));
+  }
+  
+  async function openExerciseInput(exerciseId, name){
+    if(!state.currentSessionId){ toast('Start a plan first'); return; }
+  
+    $('#logExerciseTitle').textContent = name;
+    const units = state.settings.units || 'kg';
+    const weight = $('#logWeight');
+    const reps = $('#logReps');
+    const intensity = $('#logIntensity');
+    const setsList = $('#logExerciseSets');
+  
+    // intensity options
+    intensity.innerHTML = (state.settings.intensityMode||'rpe')==='rpe'
+      ? ['', '6','7','8','9','10'].map(v=> `<option value="${v}">${v? 'RPE '+v : 'RPE'}</option>`).join('')
+      : [['','Felt'],['easy','Easy'],['medium','Medium'],['hard','Hard']].map(([v,l])=> `<option value="${v}">${l}</option>`).join('');
+  
+    // autofill last
+    const last = await getLastSetForExercise(exerciseId);
+    if(last){ weight.value = String(last.weight); reps.value = String(last.reps); } else { weight.value=''; reps.value=''; }
+  
+    // steppers
+    const wStep = (units==='lb') ? 5 : 2.5;
+    $('#logWeightMinus').onclick = ()=> weight.value = String(Math.max(0, (parseFloat(weight.value)||0) - wStep));
+    $('#logWeightPlus').onclick = ()=> weight.value = String((parseFloat(weight.value)||0) + wStep);
+    $('#logRepsMinus').onclick = ()=> reps.value = String(Math.max(0, (parseInt(reps.value)||0) - 1));
+    $('#logRepsPlus').onclick = ()=> reps.value = String((parseInt(reps.value)||0) + 1);
+  
+    // render previous sets in this session for this exercise
+    setsList.innerHTML = '';
+    (await listSetsBySession(state.currentSessionId))
+      .filter(s=> s.exerciseId === exerciseId)
+      .forEach(s=> renderSetRow(setsList, s, name));
+  
+    // add set
+    $('#btnLogAddSet').onclick = async ()=>{
+      const w = parseFloat(weight.value)||0;
+      const r = parseInt(reps.value)||0;
+      let rpe=null, felt=null;
+      if((state.settings.intensityMode||'rpe')==='rpe') rpe = intensity.value? Number(intensity.value): null;
+      else felt = intensity.value || null;
+  
+      const set = await addSet({ sessionId: state.currentSessionId, exerciseId, weight:w, reps:r, rpe, felt });
+      renderSetRow(setsList, set, name);
+    };
+  
+    // nav
+    hide($('#logPlanDetail'));
+    show($('#logExerciseInput'));
+  }
+   
   
   async function onStartSession(){
     if(state.currentSessionId){ toast('Session already running'); return; }
