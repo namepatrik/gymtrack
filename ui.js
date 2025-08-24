@@ -132,7 +132,13 @@ import {
     $('#exerciseNotes').value = ex?.notes || '';
   
     const form = $('#exerciseForm');
-    form.onsubmit = async (ev)=>{
+form.onsubmit = async (ev)=>{
+  // If the cancel button triggered the submit, close without saving
+  if (ev.submitter && ev.submitter.value === 'cancel') {
+    ev.preventDefault();
+    dlg.close('cancel');
+    return;
+  }
       ev.preventDefault();
       try{
         await upsertExercise({
@@ -234,7 +240,12 @@ import {
     };
   
     const form = $('#templateForm');
-    form.onsubmit = async (ev)=>{
+form.onsubmit = async (ev)=>{
+  if (ev.submitter && ev.submitter.value === 'cancel') {
+    ev.preventDefault();
+    dlg.close('cancel');
+    return;
+  }
       ev.preventDefault();
       try{
         const items = Array.from(list.children).map(row=> ({
